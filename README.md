@@ -1,9 +1,18 @@
 # check-certificate
 
-This is a Nagios/Icinga plugin to check a remote server's SSL/TLS certificate. The script
-performs an SSL handshake using Python's ssl library (which uses OpenSSL internally) and
-tests whether the server certificate is close to its expiry date. Note that the check is
-not limited to HTTPS.
+This is a Nagios/Icinga plugin to check a remote server's SSL/TLS certificate.
+The script performs an SSL handshake using Python's `ssl` module (which uses
+OpenSSL internally) and tests whether the server certificate is close to its
+expiry date.
+
+Any SSL-protected endpoint works, the check is not limited to HTTPS.
+
+## Prerequisites
+
+The script requires a Python interpreter. It has been tested on Python 2.7,
+3.4, and 3.5 but earlier versions of Python 3 may also work. The CA's root
+certificate has to be installed in your system's certificate store (rule of
+thumb: if curl works, Python should be happy, too).
 
 ## Usage
 
@@ -36,19 +45,18 @@ WARNING - certificate will expire in 69 days
 $
 ```
 
-For test scenarios with broken SSL setups see Google's examples on [badssl.com](https://badssl.com).
+If the certificate already has expired or validation failed for some other
+reason like a missing root certificate or a host name mismatch, the check
+returns `CRITICAL`. Connection errors and everything else yield an `UNKNOWN`
+result. All exit codes following Nagios plugin conventions.
 
-## Prerequisites
-
-The script requires a Python interpreter. It has been tested on Python 2.7, 3.4, and 3.5
-but earlier versions of Python 3 may also work. The CA's root certificate has to be
-installed in your system's certificate store (rule of thumb: if curl works, Python should
-be happy, too).
+For test scenarios with broken SSL setups see Google's examples on
+[badssl.com](https://badssl.com).
 
 ## Limitations
 
 This plugin does *not* check whether
-   * a certificate in the chain expires soon
+   * the root or any intermediate certificate in the chain expires soon
    * any certificate in the chain has been revoked via CRLs or OCSP
    
 Client certificates are not supported at this point.
