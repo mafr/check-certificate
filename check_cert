@@ -1,0 +1,96 @@
+#! /usr/bin/env python3
+#
+# Nagios/Icinga plugin to check a remote server's SSL/TLS certificate.
+#
+# Copyright (c) 2016, Matthias Friedrich <matt@mafr.de>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#
+#
+# Return values as per Nagios/Icinga conventions:
+#   0 - OK: no issues found
+#   1 - WARNING: server certificate will expire soon
+#   2 - ERROR: certificate expired, invalid, or problem with the chain
+#   3 - UNKNOWN: i.e. connection error
+#
+# Note: This script does NOT check whether
+#   * a certificate in the chain expires soon
+#   * any certificate in the chain has been revoked via CRLs or OCSP
+#
+
+import sys
+import argparse
+import socket
+import ssl
+from datetime import datetime, timedelta
+
+
+def parse_cmdline_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-H", "--host", required=True,
+        help="Name of the host to connect to")
+    parser.add_argument("-p", "--port", type=int, default=443,
+        help="Port to connect to (defaults: 443)")
+    parser.add_argument("-w", "--warn-days", type=int, default=15, metavar='N',
+        help="Warn if cert expires in less than N days (default: 15)")
+    return parser.parse_args()
+
+def to_datetime(datestr):
+    return datetime.utcfromtimestamp(ssl.cert_time_to_seconds(datestr))
+
+def load_cert(hostname, port):
+    try:
+        context = ssl.create_default_context()
+        conn = context.wrap_socket(
+            socket.socket(socket.AF_INET), server_hostname=hostname)
+        conn.connect((hostname, port))
+        cert = conn.getpeercert()
+        return cert
+    finally:
+        conn.close()
+
+
+args = parse_cmdline_args()
+
+#
+# Connect to host and download the certificate. Python's ssl module will
+# verify the certificate chain and make sure the host name matches the
+# certificate. This includes checking whether the certificte has expired
+# already.
+#
+try:
+    cert = load_cert(args.host, args.port)
+except (ssl.SSLError, ssl.CertificateError) as e:
+    print('CRITICAL -', str(e))
+    sys.exit(2)
+except Exception as e:
+    print('UNKNOWN -', str(e))
+    sys.exit(3)
+
+#
+# We have a valid SSL connection. Now we check whether the certificate
+# expires soon.
+#
+now = datetime.utcnow()
+expiry_date = to_datetime(cert['notAfter'])
+delta = expiry_date - now
+
+if delta.days < args.warn_days:
+    print('WARNING - certificate will expire in {} days'.format(delta.days))
+    sys.exit(1)
+else:
+    print('OK - certificate will expire in {} days'.format(delta.days))
+    sys.exit(0)
+
+# EOF
