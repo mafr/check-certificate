@@ -40,11 +40,11 @@ from datetime import datetime, timedelta
 def parse_cmdline_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-H", "--host", required=True,
-        help="Name of the host to connect to")
+        help="name of the host to connect to")
     parser.add_argument("-p", "--port", type=int, default=443,
-        help="Port to connect to (defaults: 443)")
+        help="port to connect to (default: 443)")
     parser.add_argument("-w", "--warn-days", type=int, default=15, metavar='N',
-        help="Warn if cert expires in less than N days (default: 15)")
+        help="warn if cert expires in less than N days (default: 15)")
     return parser.parse_args()
 
 def to_datetime(datestr):
