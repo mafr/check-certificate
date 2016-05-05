@@ -28,6 +28,7 @@
 #   * a certificate in the chain expires soon
 #   * any certificate in the chain has been revoked via CRLs or OCSP
 #
+from __future__ import print_function
 
 import sys
 import argparse
