@@ -21,7 +21,7 @@
 # Return values as per Nagios/Icinga conventions:
 #   0 - OK: no issues found
 #   1 - WARNING: server certificate will expire soon
-#   2 - ERROR: certificate expired, invalid, or problem with the chain
+#   2 - CRITICAL: certificate expired, invalid, or problem with the chain
 #   3 - UNKNOWN: i.e. connection error
 #
 # Note: This script does NOT check whether
